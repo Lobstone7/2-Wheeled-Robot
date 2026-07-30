@@ -10,6 +10,8 @@
 #include "exti.h"
 #include "encoder.h"
 #include "usart.h"
+#include "i2c.h"
+#include "imu.h"
 
 #define LEFT_MOTOR_TIMER_PORT GPIOA
 #define LEFT_MOTOR_TIMER_PIN 0
@@ -50,6 +52,11 @@
 #define RIGHT_MOTOR_C2_PORT GPIOB
 #define RIGHT_MOTOR_C2_PIN 5
 
+#define MPU6050_I2C_SCL_PORT GPIOB
+#define MPU6050_I2C_SCL_PIN 6
+
+#define MPU6050_I2C_SDA_PORT GPIOB
+#define MPU6050_I2C_SDA_PIN 7
 
 extern Motor left_motor;
 extern Motor right_motor;

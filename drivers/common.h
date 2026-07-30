@@ -20,21 +20,10 @@
 #define AHB2_OFFSET (0x08000000U)
 #define AHB2 (PERIPHERAL_BASE + AHB2_OFFSET)
 
-#define RCC_OFFSET (0x00001000U)
-#define RCC (AHB1 + RCC_OFFSET)
-
-#define RCC_CR          (*(volatile uint32_t *)(RCC + 0x00))
-#define RCC_ICSCR       (*(volatile uint32_t *)(RCC + 0x04))
-#define RCC_CFGR        (*(volatile uint32_t *)(RCC + 0x08))
-#define RCC_PLLCFGR     (*(volatile uint32_t *)(RCC + 0x0C))
-
 #define FLASH_ACR       (*(volatile uint32_t *)(0x40022000))
 
-#define RCC_APB1ENR1_OFFSET (0x58)
-#define RCC_APB1ENR1 (*(volatile uint32_t*)(RCC + RCC_APB1ENR1_OFFSET))
-
-#define RCC_APB2ENR_OFFSET (0x60)
-#define RCC_APB2ENR (*(volatile uint32_t*)(RCC + RCC_APB2ENR_OFFSET))
-
+#define PI         3.14159265f
+#define DEG_TO_RAD (PI / 180.0f)
+#define RAD_TO_DEG (180.0f / PI)
 
 #endif

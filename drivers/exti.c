@@ -27,10 +27,6 @@ static const EXTI_IRQn_t exti_irq_table[16] = {
     EXTI15_10_IRQn,
 };
 
-void rcc_exti_enable(){
-    RCC_APB2ENR |= (1U << 0);
-}
-
 void exti_init(GPIO_pin *pin,Edge_Type trigger){
     uint32_t line = pin->pin;
     uint32_t reg_index = line / 4;

@@ -20,6 +20,9 @@ target_sources(${PROJECT_NAME}
     drivers/exti.c
     drivers/encoder.c
     drivers/prin.c
+    drivers/i2c.c
+    drivers/imu.c
+    drivers/SysTick.c
 )
 
 target_include_directories(${PROJECT_NAME}

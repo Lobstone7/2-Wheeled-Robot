@@ -78,6 +78,21 @@ void board_init(){
 
     gpio_init(LEFT_MOTOR_C1_PORT,LEFT_MOTOR_C1_PIN,INPUT_MODE);
     gpio_init(LEFT_MOTOR_C2_PORT,LEFT_MOTOR_C2_PIN,INPUT_MODE);
+
+    gpio_init(MPU6050_I2C_SCL_PORT,MPU6050_I2C_SCL_PIN,ALT_FUNC_MODE);
+    gpio_init(MPU6050_I2C_SDA_PORT,MPU6050_I2C_SDA_PIN,ALT_FUNC_MODE);
+
+    gpio_output_type(MPU6050_I2C_SCL_PORT, MPU6050_I2C_SCL_PIN, GPIO_OPEN_DRAIN);
+    gpio_output_type(MPU6050_I2C_SDA_PORT, MPU6050_I2C_SDA_PIN, GPIO_OPEN_DRAIN);
+    
+    gpio_speed(MPU6050_I2C_SCL_PORT, MPU6050_I2C_SCL_PIN, GPIO_VERY_HIGH_SPEED);
+    gpio_speed(MPU6050_I2C_SDA_PORT, MPU6050_I2C_SDA_PIN, GPIO_VERY_HIGH_SPEED);
+    
+    gpio_pull(MPU6050_I2C_SCL_PORT, MPU6050_I2C_SCL_PIN, GPIO_NO_PULL);
+    gpio_pull(MPU6050_I2C_SDA_PORT, MPU6050_I2C_SDA_PIN, GPIO_NO_PULL); 
+
+    gpio_alt(MPU6050_I2C_SCL_PORT,MPU6050_I2C_SCL_PIN,GPIO_AF4);
+    gpio_alt(MPU6050_I2C_SDA_PORT,MPU6050_I2C_SDA_PIN,GPIO_AF4);
    
     //tim
     rcc_tim2_enable();
@@ -93,7 +108,7 @@ void board_init(){
     motor_init(&right_motor);
 
     //exti
-    rcc_exti_enable();
+    rcc_syscfg_enable();
     exti_init(&left_encoder.C1,BOTH);
     exti_init(&left_encoder.C2,BOTH);
 
@@ -101,11 +116,18 @@ void board_init(){
     exti_init(&right_encoder.C2,BOTH);
 
     //usart
-    rcc_usart_enable();
+    rcc_usart2_enable();
     usart2_init();
 
     //encoder
     encoder_init(&left_encoder);
     encoder_init(&right_encoder);
+
+    //i2c
+    rcc_i2c_enable();
+    i2c1_init();
+
+    //imu
+    imu_init(I2C1);
 
 }

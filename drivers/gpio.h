@@ -22,7 +22,7 @@ typedef struct{
     volatile uint32_t AFRH;
     volatile uint32_t BRR;
     volatile uint32_t ASCR;
-}GPIO_Typedef;
+}GPIO_TypeDef;
 
 typedef enum {
     INPUT_MODE,
@@ -51,25 +51,43 @@ typedef enum {
 } GPIO_AlternateFunction;
 
 typedef struct{
-    GPIO_Typedef* port;
+    GPIO_TypeDef* port;
     volatile uint32_t pin;
 }GPIO_pin;
 
+typedef enum{
+    GPIO_PUSH_PULL = 0,
+    GPIO_OPEN_DRAIN = 1,
+}GPIO_OutputType;
 
-#define GPIOA ((GPIO_Typedef*)GPIOA_BASE)
-#define GPIOB ((GPIO_Typedef*)GPIOB_BASE)
-#define GPIOC ((GPIO_Typedef*)GPIOC_BASE)
+typedef enum{
+    GPIO_LOW_SPEED       = 0,
+    GPIO_MEDIUM_SPEED    = 1,
+    GPIO_HIGH_SPEED      = 2,
+    GPIO_VERY_HIGH_SPEED = 3,
+}GPIO_Speed;
+
+typedef enum{
+    GPIO_NO_PULL   = 0,
+    GPIO_PULL_UP   = 1,
+    GPIO_PULL_DOWN = 2,
+}GPIO_Pull;
+
+
+#define GPIOA ((GPIO_TypeDef*)GPIOA_BASE)
+#define GPIOB ((GPIO_TypeDef*)GPIOB_BASE)
+#define GPIOC ((GPIO_TypeDef*)GPIOC_BASE)
 
 #define GPIO_PORT_SPACE 0x400U
 
-void rcc_gpioa_enable();
-void rcc_gpiob_enable();
-void rcc_gpioc_enable();
-void gpio_pupd(GPIO_Typedef *port, uint32_t pin, uint32_t mode);
-void gpio_init(GPIO_Typedef *port, uint32_t pin, uint32_t mode);
-void gpio_alt(GPIO_Typedef *port, uint32_t pin, GPIO_AlternateFunction AFR);
-void gpio_write(GPIO_Typedef *port, uint32_t pin, uint32_t value);
-uint32_t gpio_read(GPIO_Typedef *port, uint32_t pin);
+void gpio_pupd(GPIO_TypeDef *port, uint32_t pin, uint32_t mode);
+void gpio_init(GPIO_TypeDef *port, uint32_t pin, uint32_t mode);
+void gpio_alt(GPIO_TypeDef *port, uint32_t pin, GPIO_AlternateFunction AFR);
+void gpio_output_type(GPIO_TypeDef *port, uint8_t pin, GPIO_OutputType type);
+void gpio_speed(GPIO_TypeDef *port, uint8_t pin, GPIO_Speed speed);
+void gpio_pull(GPIO_TypeDef *port, uint8_t pin, GPIO_Pull pull);
+void gpio_write(GPIO_TypeDef *port, uint32_t pin, uint32_t value);
+uint32_t gpio_read(GPIO_TypeDef *port, uint32_t pin);
 
 
 #endif

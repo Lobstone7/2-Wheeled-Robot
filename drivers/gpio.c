@@ -1,27 +1,15 @@
 #include "gpio.h"
 
-void rcc_gpioa_enable(){
-    RCC_AHB2ENR |= (1U << 0);
-}
-
-void rcc_gpiob_enable(){
-    RCC_AHB2ENR |= (1U << 1);
-}
-
-void rcc_gpioc_enable(){
-    RCC_AHB2ENR |= (1U << 2);
-}
-
-void gpio_pupd(GPIO_Typedef *port, uint32_t pin, uint32_t mode){
+void gpio_pupd(GPIO_TypeDef *port, uint32_t pin, uint32_t mode){
     port->PUPDR |= (mode << (pin * 2));
 }
 
-void gpio_init(GPIO_Typedef *port, uint32_t pin, uint32_t mode){
+void gpio_init(GPIO_TypeDef *port, uint32_t pin, uint32_t mode){
     port->MODER &= ~(3U << (pin * 2));
     port->MODER |= (mode << (pin * 2));
 }
 
-void gpio_alt(GPIO_Typedef *port, uint32_t pin, GPIO_AlternateFunction AFR){
+void gpio_alt(GPIO_TypeDef *port, uint32_t pin, GPIO_AlternateFunction AFR){
     
     if(pin<8){
         uint32_t shift = pin * 4;
@@ -35,7 +23,24 @@ void gpio_alt(GPIO_Typedef *port, uint32_t pin, GPIO_AlternateFunction AFR){
     }
 }
 
-void gpio_write(GPIO_Typedef *port, uint32_t pin, uint32_t value){
+void gpio_output_type(GPIO_TypeDef *port, uint8_t pin, GPIO_OutputType type){
+    port->OTYPER &= ~(1U << pin);
+    port->OTYPER |= ((uint32_t)type << pin);
+}
+
+void gpio_speed(GPIO_TypeDef *port, uint8_t pin, GPIO_Speed speed)
+{
+    port->OSPEEDR &= ~(0x3U << (pin * 2));
+    port->OSPEEDR |= ((uint32_t)speed << (pin * 2));
+}
+
+void gpio_pull(GPIO_TypeDef *port, uint8_t pin, GPIO_Pull pull)
+{
+    port->PUPDR &= ~(0x3U << (pin * 2));
+    port->PUPDR |= ((uint32_t)pull << (pin * 2));
+}
+
+void gpio_write(GPIO_TypeDef *port, uint32_t pin, uint32_t value){
     if(value){
         port->BSRR |= (1U << pin);
     }
@@ -44,7 +49,7 @@ void gpio_write(GPIO_Typedef *port, uint32_t pin, uint32_t value){
     }
 }
 
-uint32_t gpio_read(GPIO_Typedef *port, uint32_t pin){
+uint32_t gpio_read(GPIO_TypeDef *port, uint32_t pin){
     return (port->IDR >> pin) & 1;
 }
 

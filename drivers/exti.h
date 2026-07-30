@@ -82,7 +82,6 @@ typedef void (*exticallback)(void *ctx);
 #define EXTI ((EXTI_TypeDef*)EXTI_BASE)
 
 void exti_register_callback(exticallback cb,uint32_t line,void *ctx);
-void rcc_exti_enable();
 void exti_init(GPIO_pin *pin,Edge_Type trigger);
 void EXTI0_Handler(void);
 void EXTI1_Handler(void);

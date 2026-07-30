@@ -7,10 +7,6 @@ void usart_register_callback(usartcallback cb){
 	usart_cb = cb;
 }
 
-void rcc_usart_enable(){
-    RCC_APB1ENR1 |= (1U << 17);
-}
-
 void usart2_init(){
     
     gpio_init(GPIOA,2,2);                             //Initialize GPIO pins for RX and TX
@@ -58,6 +54,58 @@ void usart2_read(uint8_t *buffer,uint32_t length){
         buffer++;
         length--;
     }
+}
+
+void usart2_write_int(int32_t byte){
+    char buffer[12];
+    uint8_t i = 0;
+
+    if(byte ==0){
+        usart2_write_byte('0');
+        return;
+    }
+    if(byte < 0){
+        usart2_write_byte('-');
+        byte = -byte;
+    }
+
+    while(byte > 0){
+        buffer[i++] = byte %10 + '0';
+        byte /= 10;
+    }
+
+    while(i>0){
+        usart2_write_byte(buffer[--i]);
+    }
+
+}
+
+void usart2_write_hex(uint8_t value){
+    char hex[] = "0123456789ABCDEF";
+
+    usart2_write_byte(hex[(value >> 4) & 0x0F]);
+    usart2_write_byte(hex[value & 0x0F]);
+}
+
+void usart2_write_float(float value){
+    if (value < 0.0f)
+    {
+        usart2_write_byte('-');
+        value = -value;
+    }
+
+    int32_t integer = (int32_t)value;
+    int32_t fraction = (int32_t)((value - integer) * 1000.0f + 0.5f);
+
+    usart2_write_int(integer);
+    usart2_write_byte('.');
+
+    if (fraction < 100)
+        usart2_write_byte('0');
+    if (fraction < 10)
+        usart2_write_byte('0');
+
+    usart2_write_int(fraction);
 }
 
 void USART2_Handler(void){

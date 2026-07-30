@@ -22,13 +22,15 @@ typedef struct {
 typedef void (*usartcallback) (uint8_t);
 
 void usart_register_callback(usartcallback cb);
-void rcc_usart_enable();
 void usart2_init();
 void usart2_write_byte(uint8_t data);
 void usart2_write(uint8_t *data, uint32_t length);
 uint8_t usart2_read_byte();
 uint8_t usart_receive_buffer();
 void usart2_read(uint8_t *buffer,uint32_t length);
+void usart2_write_int(int32_t byte);
+void usart2_write_hex(uint8_t value);
+void usart2_write_float(float value);
 void USART2_Handler(void);
 
 

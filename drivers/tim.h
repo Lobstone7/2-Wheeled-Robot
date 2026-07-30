@@ -41,10 +41,7 @@ typedef struct
 
 #define TIM_CR1_ARPE (1U << 7)
 
-void rcc_tim2_enable();
-void rcc_tim3_enable();
-void rcc_tim4_enable();
-void rcc_tim5_enable();
+
 void tim2_5_init(TIM2_5_TypeDef* timer,uint32_t PSC, uint32_t ARR);
 void tim_start(TIM2_5_TypeDef* timer);
 void tim_stop(TIM2_5_TypeDef* timer);
