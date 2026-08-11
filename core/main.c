@@ -9,47 +9,48 @@ void gpio_toggle(GPIO_TypeDef *port, uint32_t pin){
     }
 }
 
+void delay_ms(uint32_t ms){
+    uint32_t start = SysTick_get_ms();
+    while(SysTick_get_ms() - start  < ms);
+}
+
 int main(){
 
     board_init();
     SysTick_init();
-    uint32_t start = SysTick_get_ms();
-    gpio_init(GPIOA,5,OUTPUT_MODE);
 
+    IMU_STATE state = {0};
+    state.bias = imu_calibrate(I2C1);
+    PID_Config config = {
+        .Kp = 0.0f,          
+        .Ki = 0.0f,          
+        .Kd = 0.0f,          
+        .integral_limit = 20.0f,
+        .output_limit = 100.0f
+    };
+
+    PID_State p_state = {
+        .integral = 0.0f,
+        .desired_angle = 0.0f
+    };
+    
     
 
-    while(1){
-    //GYRO_Bias bias = imu_calibrate(I2C1);
-    //IMU_DataF data = imu_read(I2C1, &bias);
-//
-    //usart2_write((uint8_t *)"AX:", 3);
-    //usart2_write_float(data.accel.x);
-    //
-    //usart2_write((uint8_t *)" AY:", 4);
-    //usart2_write_float(data.accel.y);
-    //
-    //usart2_write((uint8_t *)" AZ:", 4);
-    //usart2_write_float(data.accel.z);
-    //
-    //usart2_write((uint8_t *)" GX:", 4);
-    //usart2_write_float(data.gyro.x);
-    //
-    //usart2_write((uint8_t *)" GY:", 4);
-    //usart2_write_float(data.gyro.y);
-    //
-    //usart2_write((uint8_t *)" GZ:", 4);
-    //usart2_write_float(data.gyro.z);
-    
-    //usart2_write((uint8_t *)"\r\n", 2);
+    uint32_t previous_ms = SysTick_get_ms();
 
-    uint32_t current = SysTick_get_ms();
+    while (1){
+        imu_update(I2C1,&state);
 
+        uint32_t current_ms = SysTick_get_ms();
+        float dt = (current_ms - previous_ms)/1000.0f;
+        previous_ms = current_ms;
 
-    if(current - start >= 5000){
-        usart2_write_int(current);
-        usart2_write((uint8_t *)"\r\n", 2);
-        start = current;
+        int output = PID(&config, &p_state, state.pitch, dt, state.gyro_x);
+
+        motor_set_speed(&left_motor,output);
+        motor_set_speed(&right_motor,output);
     }
 
-    }
-}
+
+} 
+

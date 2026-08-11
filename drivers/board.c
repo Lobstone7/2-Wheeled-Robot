@@ -93,6 +93,8 @@ void board_init(){
 
     gpio_alt(MPU6050_I2C_SCL_PORT,MPU6050_I2C_SCL_PIN,GPIO_AF4);
     gpio_alt(MPU6050_I2C_SDA_PORT,MPU6050_I2C_SDA_PIN,GPIO_AF4);
+
+    gpio_write(TB_STBY_PORT,TB_STBY_PIN,1);
    
     //tim
     rcc_tim2_enable();

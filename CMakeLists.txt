@@ -23,6 +23,7 @@ target_sources(${PROJECT_NAME}
     drivers/i2c.c
     drivers/imu.c
     drivers/SysTick.c
+    drivers/C_Buffer.c
 )
 
 target_include_directories(${PROJECT_NAME}
@@ -47,6 +48,11 @@ target_link_options(${PROJECT_NAME}
     -mthumb
     -nostartfiles
     -Wl,-Map=${PROJECT_NAME}.map
+)
+
+target_link_libraries(${PROJECT_NAME}
+    PRIVATE
+    m
 )
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD

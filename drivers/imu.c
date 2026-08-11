@@ -44,9 +44,9 @@ IMU_Data imu_read_raw(I2C_TypeDef* I2C){
 }
 
 GYRO_Bias imu_calibrate(I2C_TypeDef* I2C){
-    int32_t sum_x = 0;
-    int32_t sum_y = 0;
-    int32_t sum_z = 0;
+    float sum_x = 0;
+    float sum_y = 0;
+    float sum_z = 0;
 
     for(int i = 0;i<1000;i++){
         IMU_Data data = imu_read_raw(I2C);
@@ -56,9 +56,9 @@ GYRO_Bias imu_calibrate(I2C_TypeDef* I2C){
     }
 
     GYRO_Bias bias = {
-        .x = (float)sum_x / 1000.0f,
-        .y = (float)sum_y / 1000.0f,
-        .z = (float)sum_z / 1000.0f,
+        .x = sum_x / 1000.0f,
+        .y = sum_y / 1000.0f,
+        .z = sum_z / 1000.0f,
     };
 
     return bias;
@@ -79,3 +79,46 @@ IMU_DataF imu_read(I2C_TypeDef *I2C, GYRO_Bias *bias){
     return data;
 }
 
+void imu_update(I2C_TypeDef *I2C, IMU_STATE *state){
+    IMU_DataF data = imu_read(I2C,&state->bias);
+    state->gyro_x = data.gyro.x;
+
+    float accel_pitch = atan2f(data.accel.x,data.accel.z);
+    uint32_t current_ms = SysTick_get_ms();
+
+    if (state->previous_ms == 0) {
+        state->previous_ms = current_ms;
+    }
+    float dt = (current_ms - state->previous_ms) / 1000.0f;
+    state->previous_ms = current_ms;
+    float gyro_prediction = state->pitch + data.gyro.x * dt;
+    state->pitch = IMU_ALPHA * gyro_prediction + (1 - IMU_ALPHA) * accel_pitch;
+
+}
+
+int PID(PID_Config *config, PID_State *p_state, float pitch, float dt, float gyro){
+    float error = pitch - p_state->desired_angle;
+    p_state->integral += error * dt;
+    if(p_state->integral >= config->integral_limit){
+        p_state->integral = config->integral_limit;
+    }
+    else if(p_state->integral <= (-config->integral_limit)){
+         p_state->integral = -config->integral_limit;
+    }
+
+    float proportion = config->Kp * error;
+    float integral = config->Ki * p_state->integral;
+    float derivative = -config->Kd * gyro;
+
+    float result = proportion + integral + derivative;
+
+    if(result >= config->output_limit){
+        result = config->output_limit;
+    }
+    else if(result <= config->output_limit){
+        result = -config->output_limit;
+    }
+
+    return (int)result;
+
+}

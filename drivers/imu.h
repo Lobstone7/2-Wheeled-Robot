@@ -1,6 +1,8 @@
 #ifndef IMU_H
 #define IMU_H
 
+#include "common.h"
+#include "SysTick.h"
 #include "i2c.h"
 #define IMU_ADDR 0x68
 
@@ -16,26 +18,30 @@ typedef struct{
 }IMU_Data;
 
 typedef struct{
-    int16_t x;
-    int16_t y;
-    int16_t z;
-}GYRO_Bias;
-
-typedef struct
-{
     float x;
     float y;
     float z;
-} IMU_VectorF;
+}GYRO_Bias;
 
-typedef struct
-{
+typedef struct{
+    float x;
+    float y;
+    float z;
+}IMU_VectorF;
+
+typedef struct{
     IMU_VectorF accel;
     IMU_VectorF gyro;
-} IMU_DataF;
+}IMU_DataF;
 
-typedef enum
-{
+typedef struct{
+    GYRO_Bias bias;
+    float pitch;
+    uint32_t previous_ms;
+    float gyro_x;
+}IMU_STATE;
+
+typedef enum{
     CONFIG          = 0x1A,
     GYRO_CONFIG     = 0x1B,
     ACCEL_CONFIG    = 0x1C,
@@ -62,11 +68,28 @@ typedef enum
     PWR_MGMT_2      = 0x6C,
 
     WHO_AM_I        = 0x75
-} IMU_Register;
+}IMU_Register;
+
+#define IMU_ALPHA 0.98f
+
+typedef struct{
+    float Kp;
+    float Ki;
+    float Kd;
+    float integral_limit;
+    float output_limit;
+}PID_Config;
+
+typedef struct{
+    float integral;
+    float desired_angle;
+}PID_State;
 
 bool imu_init(I2C_TypeDef* I2C);
 IMU_Data imu_read_raw(I2C_TypeDef* I2C);
 GYRO_Bias imu_calibrate(I2C_TypeDef* I2C);
 IMU_DataF imu_read(I2C_TypeDef *I2C, GYRO_Bias *bias);
+void imu_update(I2C_TypeDef *I2C, IMU_STATE *state);
+int PID(PID_Config *config, PID_State *p_state, float pitch, float dt, float gyro);
 
 #endif

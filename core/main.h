@@ -4,9 +4,9 @@
 #include "pwm.h"
 #include "motor.h"
 #include "board.h"
-//#include "prin.h"
+#include "prin.h"
 #include "i2c.h"
 #include "imu.h"
-#include "SysTick.h"
+#include "SysTick.h" 
 
 int main();

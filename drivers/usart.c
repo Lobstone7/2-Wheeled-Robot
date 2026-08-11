@@ -1,5 +1,14 @@
 #include "usart.h"
 
+C_Buffer rx_buffer = {
+    .head = 0,
+    .tail = 0,
+};
+
+C_Buffer tx_buffer = {
+    .head = 0,
+    .tail = 0,
+};
 
 static usartcallback usart_cb = 0;
 
@@ -26,13 +35,19 @@ void usart2_init(){
 
 	USART2->CR1 |= (1U << 0);                          //USART Enable
 
-	//NVIC_ISER1 |= (1U << 6);
+	NVIC->ISER[1] |= (1U << 6);
    
 }
 
 void usart2_write_byte(uint8_t data){
-    while(!(USART2->ISR & (1U << 7)));                  //Wait for TXE bit to be 1 i.e Wait for line to be empty
-    USART2->TDR = data;                                 //Put bytes in the data register
+     if (push(&tx_buffer, data)){
+        USART2->CR1 |= (1U << 7);
+    }
+}
+
+uint8_t usart2_read_byte(){
+    while(!(USART2->ISR & (1U << 5))); 
+    return USART2->RDR;
 }
 
 void usart2_write(uint8_t *data, uint32_t length){
@@ -41,11 +56,6 @@ void usart2_write(uint8_t *data, uint32_t length){
         data++;
         length--;
     }
-}
-
-uint8_t usart2_read_byte(){
-    while(!(USART2->ISR & (1U << 5))); 
-    return USART2->RDR;
 }
 
 void usart2_read(uint8_t *buffer,uint32_t length){
@@ -108,11 +118,25 @@ void usart2_write_float(float value){
     usart2_write_int(fraction);
 }
 
+bool usart2_read_byte_bool(uint8_t *data){
+    return pop(&rx_buffer,data);
+}
+
 void USART2_Handler(void){
+
 	if(USART2->ISR & (1U << 5)){
 		uint8_t c = (uint8_t)(USART2->RDR);
-		if(usart_cb){
-			usart_cb(c);
-		}
+		push(&rx_buffer,c);
 	}
+
+    if (USART2->ISR & (1U << 7)){
+        uint8_t c;
+
+        if (pop(&tx_buffer, &c)){
+            USART2->TDR = c;
+        }
+        else{
+            USART2->CR1 &= ~(1U << 7);
+        }
+    }
 }

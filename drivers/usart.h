@@ -2,6 +2,9 @@
 #define USART_H
 #include "common.h"
 #include "gpio.h"
+#include "C_Buffer.h"
+#include "exti.h"
+
 typedef struct {
   volatile uint32_t CR1;
   volatile uint32_t CR2; 
@@ -25,6 +28,7 @@ void usart_register_callback(usartcallback cb);
 void usart2_init();
 void usart2_write_byte(uint8_t data);
 void usart2_write(uint8_t *data, uint32_t length);
+bool usart2_read_byte_bool(uint8_t *data);
 uint8_t usart2_read_byte();
 uint8_t usart_receive_buffer();
 void usart2_read(uint8_t *buffer,uint32_t length);

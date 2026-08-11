@@ -20,7 +20,7 @@ void encoder_callback(void *ctx){
 void encoder_init(Encoder_s* Encoder){
     uint8_t C1 = gpio_read(Encoder->C1.port,Encoder->C1.pin);
     uint8_t C2 = gpio_read(Encoder->C2.port,Encoder->C2.pin);
-    Encoder->previous_state = (1U << C1) | C2;
+    Encoder->previous_state = (C1 << 1) | C2;
     Encoder->count = 0;
 
     exti_init(&Encoder->C1,BOTH);
