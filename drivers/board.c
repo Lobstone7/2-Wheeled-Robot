@@ -58,6 +58,7 @@ void board_init(){
 
     //gpio
     rcc_gpioa_enable();
+    gpio_init(GPIOA,5,OUTPUT_MODE);
     gpio_init(LEFT_IN1_PORT,LEFT_IN1_PIN,OUTPUT_MODE);
     gpio_init(LEFT_IN2_PORT,LEFT_IN2_PIN,OUTPUT_MODE);
 
@@ -130,6 +131,6 @@ void board_init(){
     i2c1_init();
 
     //imu
-    imu_init(I2C1);
+    //imu_init(I2C1);
 
 }

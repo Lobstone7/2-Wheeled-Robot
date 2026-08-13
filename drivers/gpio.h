@@ -88,7 +88,7 @@ void gpio_speed(GPIO_TypeDef *port, uint8_t pin, GPIO_Speed speed);
 void gpio_pull(GPIO_TypeDef *port, uint8_t pin, GPIO_Pull pull);
 void gpio_write(GPIO_TypeDef *port, uint32_t pin, uint32_t value);
 uint32_t gpio_read(GPIO_TypeDef *port, uint32_t pin);
-
+void gpio_toggle(GPIO_TypeDef *port, uint32_t pin);
 
 #endif
 

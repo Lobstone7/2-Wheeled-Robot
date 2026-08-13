@@ -6,6 +6,8 @@
 #include "i2c.h"
 #define IMU_ADDR 0x68
 
+#define IMU_RX_BUFFER_SIZE 14
+
 typedef struct{
     int16_t x;
     int16_t y;
@@ -70,6 +72,26 @@ typedef enum{
     WHO_AM_I        = 0x75
 }IMU_Register;
 
+typedef enum {
+    IMU_IDLE,
+    IMU_WHO_AM_I,
+    IMU_PWR_MGMT_1,
+    IMU_CONFIG,
+    IMU_GYRO,
+    IMU_ACCEL,
+    IMU_DONE,
+    IMU_ERROR,
+    IMU_PHASE_COUNT,
+}IMU_Phase;
+
+typedef struct {
+    I2C_TypeDef *I2C;
+    IMU_Phase phase;
+    uint8_t buffer[IMU_RX_BUFFER_SIZE];
+} IMU_Context;
+
+void imu_i2c_callback(Trans_State result, void *context);
+
 #define IMU_ALPHA 0.98f
 
 typedef struct{
@@ -84,12 +106,13 @@ typedef struct{
     float integral;
     float desired_angle;
 }PID_State;
-
-bool imu_init(I2C_TypeDef* I2C);
+/*
+Function_Result imu_init(I2C_TypeDef *I2C);
 IMU_Data imu_read_raw(I2C_TypeDef* I2C);
 GYRO_Bias imu_calibrate(I2C_TypeDef* I2C);
 IMU_DataF imu_read(I2C_TypeDef *I2C, GYRO_Bias *bias);
 void imu_update(I2C_TypeDef *I2C, IMU_STATE *state);
 int PID(PID_Config *config, PID_State *p_state, float pitch, float dt, float gyro);
+uint8_t return_buffer();*/
 
 #endif

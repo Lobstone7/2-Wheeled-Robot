@@ -1,25 +1,23 @@
 #include "main.h"
 
-void gpio_toggle(GPIO_TypeDef *port, uint32_t pin){
-    if(port->ODR & (1U << pin)){
-        port->BSRR |= (1U << (pin + 16));        
-    }
-    else{
-        port->BSRR |= (1U << pin);
-    }
-}
-
 void delay_ms(uint32_t ms){
     uint32_t start = SysTick_get_ms();
     while(SysTick_get_ms() - start  < ms);
 }
 
+void i2c_test_callback(Trans_State result, void *context)
+{
+    (void)result;
+    (void)context;
+}
+
 int main(){
 
     board_init();
-    SysTick_init();
+    //rtos_init();
+    //vTaskStartScheduler();
 
-    IMU_STATE state = {0};
+    /*IMU_STATE state = {0};
     state.bias = imu_calibrate(I2C1);
     PID_Config config = {
         .Kp = 0.0f,          
@@ -49,7 +47,16 @@ int main(){
 
         motor_set_speed(&left_motor,output);
         motor_set_speed(&right_motor,output);
+    } */
+
+    uint8_t buffer[14] = {0};
+    i2c_read_bytes(I2C1, IMU_ADDR, WHO_AM_I, buffer, 1,i2c_test_callback, NULL);
+    while(1){
+
     }
+
+
+    
 
 
 } 

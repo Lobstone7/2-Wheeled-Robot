@@ -9,10 +9,10 @@ void HardFault_Handler(void) __attribute__((weak, alias("Default_Handler")));
 void MemManage_Handler(void) __attribute__((weak, alias("Default_Handler")));
 void BusFault_Handler(void) __attribute__((weak, alias("Default_Handler")));
 void UsageFault_Handler(void) __attribute__((weak, alias("Default_Handler")));
-void SVCall_Handler(void) __attribute__((weak, alias("Default_Handler")));
+void vPortSVCHandler(void);
 void Debug_Handler(void) __attribute__((weak, alias("Default_Handler")));
-void PendSV_Handler(void) __attribute__((weak, alias("Default_Handler")));
-void SysTick_Handler(void) __attribute__((weak, alias("Default_Handler")));
+void xPortPendSVHandler(void);
+void xPortSysTickHandler(void);
 void WWDG_Handler(void) __attribute__((weak, alias("Default_Handler")));
 void PVD_PVM_Handler(void) __attribute__((weak, alias("Default_Handler")));
 void RTC_TAMP_STAMP_CSS_LSE_Handler(void) __attribute__((weak, alias("Default_Handler")));
@@ -111,11 +111,12 @@ const uint32_t vector[] __attribute__((section(".isr_vector"))) = {             
     0,
     0,
     0,
-    (uint32_t)&SVCall_Handler,
+    (uint32_t)&vPortSVCHandler,
     (uint32_t)&Debug_Handler,
     0,
-    (uint32_t)&PendSV_Handler,
-    (uint32_t)&SysTick_Handler,
+    (uint32_t)&xPortPendSVHandler,
+    (uint32_t)&xPortSysTickHandler,
+
 
     (uint32_t)&WWDG_Handler,
     (uint32_t)&PVD_PVM_Handler,

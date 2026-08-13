@@ -1,5 +1,55 @@
 #include "imu.h"
 
+/*
+typedef void (*FuncHandler) (void* context,  Trans_State state);
+
+static FuncHandler imu_handlers[IMU_PHASE_COUNT] = {
+    [IMU_WHO_AM_I] = imu_who_am_i_handler,
+    [IMU_PWR_MGMT_1] = imu_pwr_mgmt_1_handler,
+    [IMU_CONFIG]   = imu_config_handler,
+    [IMU_ACCEL]    = imu_accel_handler,
+    [IMU_GYRO]    = imu_gyro_handler,
+    [IMU_DONE]    = imu_done_handler,
+    [IMU_ERROR]    = imu_error_handler,
+};
+
+void imu_i2c_callback(Trans_State state, void *context){
+    IMU_Context *ctx = context;
+
+    imu_handlers[ctx->phase](ctx, state);
+}
+
+void imu_init_who_am_i_handler(void *context, Trans_State state){
+    IMU_Context *ctx = (IMU_Context *)context;
+    if(state != SUCCESS){
+        
+    }
+    else{
+        if(ctx->buffer[0] == IMU_ADDR){
+            ctx->phase = IMU_PWR_MGMT_1;
+            i2c_write(I2C1,IMU_ADDR,PWR_MGMT_1,0x00,imu_i2c_callback, (void*)ctx);
+        }
+    }
+}
+
+
+void imu_init(){
+
+}
+
+
+
+
+
+typedef struct {
+    uint8_t raw_buffer[14];
+    IMU_Data data;
+    bool read_pending;
+    IMU_InitPhase init_phase;
+} IMU_Context;
+
+static IMU_Context imu_context;
+
 static bool reg_check_helper(I2C_TypeDef* I2C,IMU_Register reg,uint8_t val){
     i2c_write(I2C,IMU_ADDR,reg,val);
     uint8_t check = i2c_read(I2C,IMU_ADDR,reg);
@@ -10,16 +60,22 @@ static inline int16_t combine_bytes(uint8_t high, uint8_t low){
     return (int16_t)(((uint16_t)high << 8) | low);
 }
 
-bool imu_init(I2C_TypeDef* I2C){
-    uint8_t check = i2c_read(I2C,IMU_ADDR,WHO_AM_I);
-    if(check != 0x70) return false;
+Function_Result imu_init(I2C_TypeDef *I2C){
+    if (imu_context.init_phase != IMU_INIT_IDLE &&
+        imu_context.init_phase != IMU_INIT_DONE &&
+        imu_context.init_phase != IMU_INIT_ERROR) {
+        return ACTIVE;
+    }
 
-    if(!reg_check_helper(I2C,PWR_MGMT_1,0x00)) return false;
-    if(!reg_check_helper(I2C,CONFIG,0x03)) return false;
-    if(!reg_check_helper(I2C,GYRO_CONFIG,0x00)) return false;
-    if(!reg_check_helper(I2C,ACCEL_CONFIG,0x00)) return false;
+    imu_context.init_phase = IMU_INIT_WHO_AM_I;
 
-    return true;
+    return i2c_read_bytes(
+        I2C,
+        IMU_ADDR,
+        WHO_AM_I,
+        imu_context.raw_buffer,
+        1
+    );
 }
 
 IMU_Data imu_read_raw(I2C_TypeDef* I2C){
@@ -122,3 +178,5 @@ int PID(PID_Config *config, PID_State *p_state, float pitch, float dt, float gyr
     return (int)result;
 
 }
+*/
+

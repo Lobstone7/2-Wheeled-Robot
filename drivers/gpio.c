@@ -53,3 +53,12 @@ uint32_t gpio_read(GPIO_TypeDef *port, uint32_t pin){
     return (port->IDR >> pin) & 1;
 }
 
+void gpio_toggle(GPIO_TypeDef *port, uint32_t pin){
+    if(port->ODR & (1U << pin)){
+        port->BSRR = (1U << (pin + 16));        
+    }
+    else{
+        port->BSRR = (1U << pin);
+    }
+}
+

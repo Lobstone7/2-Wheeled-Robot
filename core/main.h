@@ -8,5 +8,8 @@
 #include "i2c.h"
 #include "imu.h"
 #include "SysTick.h" 
+#include "FreeRTOS.h"
+#include "task.h"
+#include "rtos.h"
 
 int main();

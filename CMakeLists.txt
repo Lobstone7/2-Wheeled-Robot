@@ -2,12 +2,44 @@ cmake_minimum_required(VERSION 3.22)
 
 project(Robot LANGUAGES C ASM)
 
+add_library(freertos_config INTERFACE)
+
+target_include_directories(freertos_config
+    SYSTEM
+    INTERFACE
+    ${CMAKE_SOURCE_DIR}/include
+)
+
+set(FREERTOS_HEAP "4" CACHE STRING "" FORCE)
+set(FREERTOS_PORT "GCC_ARM_CM4F" CACHE STRING "" FORCE)
+
+add_subdirectory(
+    ${CMAKE_SOURCE_DIR}/external/FreeRTOS-Kernel
+)
+
+target_compile_options(freertos_kernel_port
+    PRIVATE
+    -mcpu=cortex-m4
+    -mthumb
+    -mfpu=fpv4-sp-d16
+    -mfloat-abi=hard
+)
+
+target_compile_options(freertos_kernel
+    PRIVATE
+    -mcpu=cortex-m4
+    -mthumb
+    -mfpu=fpv4-sp-d16
+    -mfloat-abi=hard
+)
+
 add_executable(${PROJECT_NAME})
 
 target_sources(${PROJECT_NAME}
     PRIVATE
 
     core/startup.c
+    core/rtos.c
     core/main.c
 
     drivers/clock.c
@@ -33,19 +65,23 @@ target_include_directories(${PROJECT_NAME}
 )
 
 target_compile_options(${PROJECT_NAME}
-    PRIVATE
+PRIVATE
     -mcpu=cortex-m4
     -mthumb
+    -mfpu=fpv4-sp-d16
+    -mfloat-abi=hard
     -Wall
     -Wextra
     -g
 )
 
 target_link_options(${PROJECT_NAME}
-    PRIVATE
+PRIVATE
     -T${CMAKE_SOURCE_DIR}/core/linker.ld
     -mcpu=cortex-m4
     -mthumb
+    -mfpu=fpv4-sp-d16
+    -mfloat-abi=hard
     -nostartfiles
     -Wl,-Map=${PROJECT_NAME}.map
 )
@@ -53,6 +89,8 @@ target_link_options(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME}
     PRIVATE
     m
+    freertos_kernel
+    freertos_kernel_port
 )
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
