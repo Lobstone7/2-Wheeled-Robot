@@ -1,17 +1,37 @@
 #include "imu.h"
 
-/*
+
 typedef void (*FuncHandler) (void* context,  Trans_State state);
+
+static int16_t imu_make_int16(uint8_t high, uint8_t low){
+    return (int16_t)(((uint16_t)high << 8) | low);
+}
+
+static IMU_Context imu_context;
+static IMU_STATE imu_state;
+static IMU_DataF dataf;
+
+static int32_t gyro_sum_x;
+static int32_t gyro_sum_y;
+static int32_t gyro_sum_z;
+static uint16_t calibration_samples;
 
 static FuncHandler imu_handlers[IMU_PHASE_COUNT] = {
     [IMU_WHO_AM_I] = imu_who_am_i_handler,
     [IMU_PWR_MGMT_1] = imu_pwr_mgmt_1_handler,
-    [IMU_CONFIG]   = imu_config_handler,
-    [IMU_ACCEL]    = imu_accel_handler,
-    [IMU_GYRO]    = imu_gyro_handler,
-    [IMU_DONE]    = imu_done_handler,
-    [IMU_ERROR]    = imu_error_handler,
+    [IMU_CONFIG] = imu_config_handler,
+    [IMU_GYRO_CONFIG] = imu_gyro_config_handler,
+    [IMU_ACCEL_CONFIG] = imu_accel_config_handler,
+    [IMU_VERIFY_PWR_MGMT_1] = imu_verify_pwr_mgmt_1_handler,
+    [IMU_VERIFY_CONFIG] = imu_verify_config_handler,
+    [IMU_VERIFY_GYRO_CONFIG] = imu_verify_gyro_config_handler,
+    [IMU_VERIFY_ACCEL_CONFIG] = imu_verify_accel_config_handler,
+    [IMU_CALIBRATE] = imu_calibration_handler,
+    [IMU_READ] = imu_read_handler,
+    [IMU_DONE] = imu_done_handler,
+    [IMU_ERROR] = imu_error_handler,
 };
+
 
 void imu_i2c_callback(Trans_State state, void *context){
     IMU_Context *ctx = context;
@@ -19,28 +39,243 @@ void imu_i2c_callback(Trans_State state, void *context){
     imu_handlers[ctx->phase](ctx, state);
 }
 
-void imu_init_who_am_i_handler(void *context, Trans_State state){
+
+void imu_error_handler(void *context, Trans_State state){
+    IMU_Context *ctx = (IMU_Context *)context;
+
+    // Error has already been recorded by imu_set_error().
+    // Terminal state: do nothing for now.
+}
+
+void imu_done_handler(void *context, Trans_State state){
+    IMU_Context *ctx = (IMU_Context *)context;
+
+    ctx->phase = IMU_IDLE;
+}
+
+static void imu_set_error(IMU_Context *ctx, Trans_State state){
+    ctx->error_phase = ctx->phase;
+    ctx->phase = IMU_ERROR;
+    imu_error_handler(ctx, state);
+}
+
+
+void imu_who_am_i_handler(void *context, Trans_State state){
     IMU_Context *ctx = (IMU_Context *)context;
     if(state != SUCCESS){
-        
+       imu_set_error(ctx, state);
+        return;
     }
-    else{
-        if(ctx->buffer[0] == IMU_ADDR){
-            ctx->phase = IMU_PWR_MGMT_1;
-            i2c_write(I2C1,IMU_ADDR,PWR_MGMT_1,0x00,imu_i2c_callback, (void*)ctx);
-        }
+    
+    if(ctx->buffer[0] != IMU_WHO_AM_I_VAL){
+       imu_set_error(ctx, state);
+        return;
     }
+
+    ctx->phase = IMU_PWR_MGMT_1;
+    i2c_write(I2C1,IMU_ADDR,PWR_MGMT_1,0x00,imu_i2c_callback,ctx);
+    
+}
+
+void imu_pwr_mgmt_1_handler(void *context, Trans_State state){
+    IMU_Context *ctx = (IMU_Context *)context;
+    if(state != SUCCESS){
+        imu_set_error(ctx, state);
+        return;
+    }
+    
+   ctx->phase = IMU_CONFIG;
+   i2c_write(I2C1,IMU_ADDR,CONFIG,0x03,imu_i2c_callback,ctx);
+}
+
+void imu_config_handler(void *context, Trans_State state){
+    IMU_Context *ctx = (IMU_Context *)context;
+    if(state != SUCCESS){
+       imu_set_error(ctx, state);
+        return;
+    }
+    
+   ctx->phase = IMU_GYRO_CONFIG;
+   i2c_write(I2C1,IMU_ADDR,GYRO_CONFIG,0x00,imu_i2c_callback,ctx);
+}
+
+void imu_gyro_config_handler(void *context, Trans_State state){
+    IMU_Context *ctx = (IMU_Context *)context;
+    if(state != SUCCESS){
+       imu_set_error(ctx, state);
+        return;
+    }
+    
+   ctx->phase = IMU_ACCEL_CONFIG;
+   i2c_write(I2C1,IMU_ADDR,ACCEL_CONFIG,0x00,imu_i2c_callback,ctx);
+}
+
+void imu_accel_config_handler(void *context, Trans_State state){
+    IMU_Context *ctx = (IMU_Context *)context;
+    if(state != SUCCESS){
+        imu_set_error(ctx, state);
+        return;
+    }
+    
+   ctx->phase = IMU_VERIFY_PWR_MGMT_1;
+   i2c_read_bytes(I2C1,IMU_ADDR,PWR_MGMT_1,ctx->buffer,1,imu_i2c_callback,ctx);
+}
+
+void imu_verify_pwr_mgmt_1_handler(void *context, Trans_State state){
+    IMU_Context *ctx = (IMU_Context *)context;
+    if(state != SUCCESS){
+       imu_set_error(ctx, state);
+        return;
+    }
+
+    if(ctx->buffer[0] != 0x00){
+        imu_set_error(ctx, state);
+        return;
+    }
+    
+   ctx->phase = IMU_VERIFY_CONFIG;
+   i2c_read_bytes(I2C1,IMU_ADDR,CONFIG,ctx->buffer,1,imu_i2c_callback,ctx);
+}
+
+void imu_verify_config_handler(void *context, Trans_State state){
+    IMU_Context *ctx = (IMU_Context *)context;
+    if(state != SUCCESS){
+        imu_set_error(ctx, state);
+        return;
+    }
+
+    if(ctx->buffer[0] != 0x03){
+        imu_set_error(ctx, state);
+        return;
+    }
+    
+   ctx->phase = IMU_VERIFY_GYRO_CONFIG;
+   i2c_read_bytes(I2C1,IMU_ADDR,GYRO_CONFIG,ctx->buffer,1,imu_i2c_callback,ctx);
+}
+
+void imu_verify_gyro_config_handler(void *context, Trans_State state){
+    IMU_Context *ctx = (IMU_Context *)context;
+    if(state != SUCCESS){
+        imu_set_error(ctx, state);
+        return;
+    }
+
+    if(ctx->buffer[0] != 0x00){
+        imu_set_error(ctx, state);
+        return;
+    }
+    
+   ctx->phase = IMU_VERIFY_ACCEL_CONFIG;
+   i2c_read_bytes(I2C1,IMU_ADDR,ACCEL_CONFIG,ctx->buffer,1,imu_i2c_callback,ctx);
+}
+
+void imu_verify_accel_config_handler(void *context, Trans_State state){
+    IMU_Context *ctx = (IMU_Context *)context;
+    if(state != SUCCESS){
+       imu_set_error(ctx, state);
+        return;
+    }
+
+    if(ctx->buffer[0] != 0x00){
+        imu_set_error(ctx, state);
+        return;
+    }
+    
+   ctx->phase = IMU_DONE;
+   imu_done_handler(ctx, SUCCESS);
+}
+
+void imu_calibration_handler(void *context, Trans_State state){
+    IMU_Context *ctx = (IMU_Context *)context;
+    if(state != SUCCESS){
+       imu_set_error(ctx, state);
+        return;
+    }
+
+    int16_t gyro_x = imu_make_int16(ctx->buffer[8], ctx->buffer[9]);
+    int16_t gyro_y = imu_make_int16(ctx->buffer[10], ctx->buffer[11]);
+    int16_t gyro_z = imu_make_int16(ctx->buffer[12], ctx->buffer[13]);
+
+    gyro_sum_x += gyro_x;
+    gyro_sum_y += gyro_y;
+    gyro_sum_z += gyro_z;
+
+    calibration_samples++;
+
+    if (calibration_samples < IMU_CALIBRATION_SAMPLES) {
+        i2c_read_bytes(
+            I2C1,
+            IMU_ADDR,
+            ACCEL_XOUT_H,
+            ctx->buffer,
+            14,
+            imu_i2c_callback,
+            ctx
+        );
+
+        return;
+    }
+
+    imu_state.bias.x = (float)gyro_sum_x / IMU_CALIBRATION_SAMPLES;
+    imu_state.bias.y = (float)gyro_sum_y / IMU_CALIBRATION_SAMPLES;
+    imu_state.bias.z = (float)gyro_sum_z / IMU_CALIBRATION_SAMPLES;
+
+    ctx->phase = IMU_DONE;
+    imu_done_handler(ctx, SUCCESS);
+    
+}
+
+void imu_read_handler(void *context, Trans_State state){
+    IMU_Context *ctx = (IMU_Context *)context;
+    if(state != SUCCESS){
+       imu_set_error(ctx, state);
+        return;
+    }
+
+   dataf.accel.x = (float)imu_make_int16(ctx->buffer[0], ctx->buffer[1]) / 16384.0f;
+   dataf.accel.y = (float)imu_make_int16(ctx->buffer[2], ctx->buffer[3]) / 16384.0f;
+   dataf.accel.z = (float)imu_make_int16(ctx->buffer[4], ctx->buffer[5]) / 16384.0f;
+
+   dataf.gyro.x = (((float)imu_make_int16(ctx->buffer[8], ctx->buffer[9]) - imu_state.bias.x) / 131.0f) * DEG_TO_RAD;
+   dataf.gyro.y = (((float)imu_make_int16(ctx->buffer[10], ctx->buffer[11]) - imu_state.bias.y) / 131.0f) * DEG_TO_RAD;
+   dataf.gyro.z = (((float)imu_make_int16(ctx->buffer[12], ctx->buffer[13]) - imu_state.bias.z) / 131.0f) * DEG_TO_RAD;
+
+   ctx->phase = IMU_DONE;
+   imu_done_handler(ctx, SUCCESS);
 }
 
 
-void imu_init(){
+void imu_init(void){
+    IMU_Context *ctx = &imu_context;
 
+    ctx->phase = IMU_WHO_AM_I;
+    i2c_read_bytes(I2C1,IMU_ADDR,WHO_AM_I,ctx->buffer,1,imu_i2c_callback,ctx);
+}
+
+void imu_calibrate(void){
+    IMU_Context *ctx = &imu_context;
+
+    calibration_samples = 0;
+    gyro_sum_x  = 0;
+    gyro_sum_y  = 0;
+    gyro_sum_z  = 0;
+
+    ctx->phase = IMU_CALIBRATE;
+
+    i2c_read_bytes(I2C1,IMU_ADDR,ACCEL_XOUT_H,ctx->buffer,14,imu_i2c_callback,ctx);
+}
+
+void imu_read(void){
+    IMU_Context *ctx = &imu_context;
+
+    ctx->phase = IMU_READ;
+    i2c_read_bytes(I2C1,IMU_ADDR,ACCEL_XOUT_H,ctx->buffer,14,imu_i2c_callback,ctx);
 }
 
 
 
 
-
+/*
 typedef struct {
     uint8_t raw_buffer[14];
     IMU_Data data;

@@ -35,7 +35,7 @@ void usart2_init(){
 
 	USART2->CR1 |= (1U << 0);                          //USART Enable
 
-	NVIC->ISER[1] |= (1U << 6);
+	NVIC->ISER[1] = (1U << 6);
    
 }
 

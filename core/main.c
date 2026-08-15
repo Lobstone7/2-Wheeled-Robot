@@ -9,6 +9,8 @@ void i2c_test_callback(Trans_State result, void *context)
 {
     (void)result;
     (void)context;
+
+    __asm volatile ("nop");
 }
 
 int main(){
@@ -48,9 +50,9 @@ int main(){
         motor_set_speed(&left_motor,output);
         motor_set_speed(&right_motor,output);
     } */
-
-    uint8_t buffer[14] = {0};
-    i2c_read_bytes(I2C1, IMU_ADDR, WHO_AM_I, buffer, 1,i2c_test_callback, NULL);
+    imu_init();
+    imu_calibrate();
+    imu_read();
     while(1){
 
     }

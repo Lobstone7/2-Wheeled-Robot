@@ -9,7 +9,7 @@ typedef struct{
     uint8_t *buffer;
     uint8_t length;
     uint8_t rx_index;
-    Trans_State state;
+    volatile Trans_State state;
     Trans_Phase phase;
 
     void (*callback)(Trans_State state, void *context);
@@ -19,14 +19,19 @@ typedef struct{
 
 static I2C_Context i2c1_context;
 
-void i2c1_init(){
+volatile uint32_t debug_isr_log[8];
+volatile uint32_t debug_rxdr_log[8];
+volatile uint8_t debug_isr_index = 0;
+volatile uint32_t debug_transaction_count = 0;
+
+void i2c1_init(void){
     I2C1->CR1 &= ~CR1_PE_Msk;
 
     I2C1->TIMINGR = 0x10909CEC;
 
     I2C1->CR1 |= CR1_PE_Msk;
 
-    NVIC->ISER[0] |= (1U << 31);
+    NVIC->ISER[0] = (1U << 31);
 
 }
 
@@ -68,6 +73,9 @@ Function_Result i2c_write(I2C_TypeDef* I2C,uint8_t address,uint8_t reg,uint8_t d
 }
 
 Function_Result i2c_read_bytes(I2C_TypeDef *I2C, uint8_t address, uint8_t reg, uint8_t *buffer, uint8_t length,void (*callback)(Trans_State result, void *context), void *context){   
+    
+    debug_transaction_count++;
+    
     if(length == 0){
         return ERROR;
     }
@@ -116,61 +124,9 @@ Function_Result i2c_read_bytes(I2C_TypeDef *I2C, uint8_t address, uint8_t reg, u
 void I2C1_EV_Handler(void){
     I2C_Context *ctx = &i2c1_context;
 
-    if(ctx->I2C->ISR & ISR_TXIS_Msk){
-        if(ctx->phase == WRITE_REG ){
-            ctx->I2C->TXDR = ctx->reg;
-            ctx->phase = WRITE_DATA;
-        }
-        else if(ctx->phase == WRITE_DATA){
-            ctx->I2C->TXDR = ctx->data;
-        }
-        else if(ctx->phase == READ_REG){
-            ctx->I2C->TXDR = ctx->reg;
-        }
-    }
+    uint32_t isr = ctx->I2C->ISR;
 
-    if(ctx->I2C->ISR & ISR_TC_Msk){
-       if(ctx->phase == READ_REG){
-            ctx->phase = READ_DATA;
-            ctx->I2C->CR2 |= CR2_RD_WRN_Msk;
-            ctx->I2C->CR2 &= ~CR2_NBYTES_Msk;
-            ctx->I2C->CR2 |= ((uint32_t)ctx->length << CR2_NBYTES_Pos);
-            ctx->I2C->CR2 |= CR2_AUTOEND_Msk;
-            ctx->I2C->CR2 |= CR2_START_Msk;
-       }
-       
-    }
-
-    if (ctx->I2C->ISR & ISR_RXNE_Msk) {
-        if (ctx->phase == READ_DATA) {
-            ctx->buffer[ctx->rx_index] = ctx->I2C->RXDR;
-            ctx->rx_index++;
-        }
-    }
-
-    if(ctx->I2C->ISR & ISR_STOPF_Msk){
-        ctx->state = SUCCESS;
-        ctx->I2C->ICR = ICR_STOPCF_Msk;
-
-        ctx->I2C->CR1 &= ~(CR1_TXIE_Msk | CR1_RXIE_Msk | CR1_STOPIE_Msk | CR1_TCIE_Msk | CR1_NACKIE_Msk | CR1_ERRIE_Msk);
-
-        void (*callback)(Trans_State, void *) = ctx->callback;
-        void *callback_context = ctx->callback_context;
-
-        ctx->rx_index = 0;
-        ctx->buffer = NULL;
-        ctx->length = 0;
-        ctx->callback = NULL;
-        ctx->callback_context = NULL;
-
-        if(callback != NULL){
-            callback(ctx->state, callback_context);
-        }
-        
-        return;
-    }
-
-    if(ctx->I2C->ISR & ISR_NACKF_Msk){
+    if(isr & ISR_NACKF_Msk){
         ctx->state = NACK;
         ctx->I2C->ICR = ICR_NACKCF_Msk;
 
@@ -191,7 +147,7 @@ void I2C1_EV_Handler(void){
         return;
     }
 
-    if(ctx->I2C->ISR & ISR_BERR_Msk ){
+    if(isr & ISR_BERR_Msk ){
         ctx->state = BERR;
         ctx->I2C->ICR = ICR_BERRCF_Msk;
 
@@ -211,14 +167,78 @@ void I2C1_EV_Handler(void){
         }
         return;
     }
+
+    if(isr & ISR_TXIS_Msk){
+        if(ctx->phase == WRITE_REG ){
+            ctx->I2C->TXDR = ctx->reg;
+            ctx->phase = WRITE_DATA;
+        }
+        else if(ctx->phase == WRITE_DATA){
+            ctx->I2C->TXDR = ctx->data;
+        }
+        else if(ctx->phase == READ_REG){
+            ctx->I2C->TXDR = ctx->reg;
+        }
+        return;
+    }
+
+    if(isr & ISR_TC_Msk){
+       if(ctx->phase == READ_REG){
+            ctx->phase = READ_DATA;
+            uint32_t cr2 = ctx->I2C->CR2;
+            cr2 |= CR2_RD_WRN_Msk;
+            cr2 &= ~CR2_NBYTES_Msk;
+            cr2 |= ((uint32_t)ctx->length << CR2_NBYTES_Pos);
+            cr2 |= CR2_AUTOEND_Msk;
+            cr2 |= CR2_START_Msk;
+            ctx->I2C->CR2 = cr2;
+       }
+       return;
+       
+    }
+
+    if (isr & ISR_RXNE_Msk) {
+
+        if(ctx->phase == READ_DATA){
+            uint8_t data = ctx->I2C->RXDR;
+            ctx->buffer[ctx->rx_index] = data;
+            ctx->rx_index++;
+        }
+        return;
+    }
+
+    if(isr & ISR_STOPF_Msk){
+
+        ctx->state = SUCCESS;
+        ctx->I2C->ICR = ICR_STOPCF_Msk;
+
+        void (*callback)(Trans_State, void *) = ctx->callback;
+        void *callback_context = ctx->callback_context;
+
+        ctx->callback = NULL;
+        ctx->callback_context = NULL;
+
+        ctx->rx_index = 0;
+        ctx->buffer = NULL;
+        ctx->length = 0;
+
+        ctx->I2C->CR1 &= ~(CR1_TXIE_Msk | CR1_RXIE_Msk | CR1_STOPIE_Msk | CR1_TCIE_Msk | CR1_NACKIE_Msk | CR1_ERRIE_Msk);
+
+
+        if(callback != NULL){
+            callback(SUCCESS, callback_context);
+        }
+
+        return;
+    }
+
+    
 }
 
-Trans_State i2c_get_state(void)
-{
+Trans_State i2c_get_state(void){
     return i2c1_context.state;
 }
 
-uint8_t i2c_get_data(void)
-{
+uint8_t i2c_get_data(void){
     return i2c1_context.data;
 }

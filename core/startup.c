@@ -1,6 +1,10 @@
 #include "common.h"
 
 extern uint32_t _estack;                   //Tells the compiler _estack has been declared somewhere outside file
+
+// Define the CPACR register address
+#define CPACR (*((volatile unsigned long *)0xE000ED88))
+
 void Reset_Handler(void);
 void Default_Handler(void);
 
@@ -228,6 +232,9 @@ void Reset_Handler(void){                            //extern declaration of sta
         (*_sbssp) = 0;
         _sbssp++;
     }
+
+    // Enable full access to Coprocessors 10 and 11 (The FPU)
+    CPACR |= (0xFU << 20);
 
     main();                                        //Calling main
 

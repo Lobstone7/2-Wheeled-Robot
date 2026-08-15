@@ -138,7 +138,7 @@ typedef enum{
 
 
 
-void i2c1_init();
+void i2c1_init(void);
 Function_Result i2c_write(I2C_TypeDef* I2C,uint8_t address,uint8_t reg,uint8_t data,void (*callback)(Trans_State result, void *context), void *context);
 Function_Result i2c_read_bytes(I2C_TypeDef *I2C, uint8_t address, uint8_t reg, uint8_t *buffer, uint8_t length,void (*callback)(Trans_State result, void *context), void *context);
 Trans_State i2c_get_state(void);

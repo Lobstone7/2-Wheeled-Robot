@@ -7,6 +7,8 @@
 #define IMU_ADDR 0x68
 
 #define IMU_RX_BUFFER_SIZE 14
+#define IMU_WHO_AM_I_VAL 0x70U
+#define IMU_CALIBRATION_SAMPLES 1000U
 
 typedef struct{
     int16_t x;
@@ -77,8 +79,14 @@ typedef enum {
     IMU_WHO_AM_I,
     IMU_PWR_MGMT_1,
     IMU_CONFIG,
-    IMU_GYRO,
-    IMU_ACCEL,
+    IMU_GYRO_CONFIG,
+    IMU_ACCEL_CONFIG,
+    IMU_VERIFY_PWR_MGMT_1,
+    IMU_VERIFY_CONFIG,
+    IMU_VERIFY_GYRO_CONFIG,
+    IMU_VERIFY_ACCEL_CONFIG,
+    IMU_CALIBRATE,
+    IMU_READ,
     IMU_DONE,
     IMU_ERROR,
     IMU_PHASE_COUNT,
@@ -87,8 +95,11 @@ typedef enum {
 typedef struct {
     I2C_TypeDef *I2C;
     IMU_Phase phase;
+    IMU_Phase error_phase;
     uint8_t buffer[IMU_RX_BUFFER_SIZE];
 } IMU_Context;
+
+
 
 void imu_i2c_callback(Trans_State result, void *context);
 
@@ -106,6 +117,31 @@ typedef struct{
     float integral;
     float desired_angle;
 }PID_State;
+
+void imu_i2c_callback(Trans_State state, void *context);
+
+void imu_who_am_i_handler(void *context, Trans_State state);
+void imu_pwr_mgmt_1_handler(void *context, Trans_State state);
+void imu_config_handler(void *context, Trans_State state);
+void imu_gyro_config_handler(void *context, Trans_State state);
+void imu_accel_config_handler(void *context, Trans_State state);
+
+void imu_verify_pwr_mgmt_1_handler(void *context, Trans_State state);
+void imu_verify_config_handler(void *context, Trans_State state);
+void imu_verify_gyro_config_handler(void *context, Trans_State state);
+void imu_verify_accel_config_handler(void *context, Trans_State state);
+
+void imu_calibration_handler(void *context, Trans_State state);
+void imu_read_handler(void *context, Trans_State state);
+
+void imu_done_handler(void *context, Trans_State state);
+void imu_error_handler(void *context, Trans_State state);
+
+void imu_init(void);
+void imu_calibrate(void);
+void imu_read(void);
+
+
 /*
 Function_Result imu_init(I2C_TypeDef *I2C);
 IMU_Data imu_read_raw(I2C_TypeDef* I2C);
