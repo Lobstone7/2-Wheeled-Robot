@@ -39,7 +39,6 @@ typedef struct{
 }IMU_DataF;
 
 typedef struct{
-    GYRO_Bias bias;
     float pitch;
     uint32_t previous_ms;
     float gyro_x;
@@ -92,16 +91,28 @@ typedef enum {
     IMU_PHASE_COUNT,
 }IMU_Phase;
 
+typedef enum {
+    IMU_OP_NONE,
+    IMU_OP_INIT,
+    IMU_OP_CALIBRATE,
+    IMU_OP_READ
+} IMU_Operation;
+
+typedef void (*IMU_CompleteCallback)(IMU_Operation operation,Trans_State state,void *context);
+
 typedef struct {
     I2C_TypeDef *I2C;
     IMU_Phase phase;
     IMU_Phase error_phase;
+    IMU_Operation operation;
+    Trans_State state;
+    Function_Result result;
+
+    IMU_CompleteCallback complete_callback;
+    void *complete_context;
+
     uint8_t buffer[IMU_RX_BUFFER_SIZE];
 } IMU_Context;
-
-
-
-void imu_i2c_callback(Trans_State result, void *context);
 
 #define IMU_ALPHA 0.98f
 
@@ -118,7 +129,15 @@ typedef struct{
     float desired_angle;
 }PID_State;
 
+void imu_set_complete_callback(IMU_CompleteCallback callback,void *context);
+
+bool init_return();
+bool calib_return();
+bool read_return();
+
+
 void imu_i2c_callback(Trans_State state, void *context);
+void imu_set_complete_callback(IMU_CompleteCallback callback, void *context);
 
 void imu_who_am_i_handler(void *context, Trans_State state);
 void imu_pwr_mgmt_1_handler(void *context, Trans_State state);
@@ -141,14 +160,5 @@ void imu_init(void);
 void imu_calibrate(void);
 void imu_read(void);
 
-
-/*
-Function_Result imu_init(I2C_TypeDef *I2C);
-IMU_Data imu_read_raw(I2C_TypeDef* I2C);
-GYRO_Bias imu_calibrate(I2C_TypeDef* I2C);
-IMU_DataF imu_read(I2C_TypeDef *I2C, GYRO_Bias *bias);
-void imu_update(I2C_TypeDef *I2C, IMU_STATE *state);
-int PID(PID_Config *config, PID_State *p_state, float pitch, float dt, float gyro);
-uint8_t return_buffer();*/
 
 #endif

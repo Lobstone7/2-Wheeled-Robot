@@ -13,7 +13,7 @@ void i2c_test_callback(Trans_State result, void *context)
     __asm volatile ("nop");
 }
 
-int main(){
+void main(){
 
     board_init();
     //rtos_init();
@@ -50,15 +50,12 @@ int main(){
         motor_set_speed(&left_motor,output);
         motor_set_speed(&right_motor,output);
     } */
-    imu_init();
-    imu_calibrate();
-    imu_read();
+    rtos_init();
+    vTaskStartScheduler();
     while(1){
 
     }
 
-
-    
 
 
 } 

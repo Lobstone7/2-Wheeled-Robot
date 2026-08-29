@@ -12,4 +12,4 @@
 #include "task.h"
 #include "rtos.h"
 
-int main();
+void main();
