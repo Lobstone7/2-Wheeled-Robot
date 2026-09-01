@@ -19,12 +19,13 @@ typedef struct{
 
 static I2C_Context i2c1_context;
 
-volatile uint32_t debug_isr_log[8];
-volatile uint32_t debug_rxdr_log[8];
-volatile uint8_t debug_isr_index = 0;
-volatile uint32_t debug_transaction_count = 0;
 
 void i2c1_init(void){
+    volatile uint32_t delay = 10;
+    while (delay--) {
+        __asm volatile ("nop");
+    }
+
     I2C1->CR1 &= ~CR1_PE_Msk;
 
     I2C1->TIMINGR = 0x10909CEC;
@@ -73,9 +74,7 @@ Function_Result i2c_write(I2C_TypeDef* I2C,uint8_t address,uint8_t reg,uint8_t d
 }
 
 Function_Result i2c_read_bytes(I2C_TypeDef *I2C, uint8_t address, uint8_t reg, uint8_t *buffer, uint8_t length,void (*callback)(Trans_State result, void *context), void *context){   
-    
-    debug_transaction_count++;
-    
+        
     if(length == 0){
         return ERROR;
     }
@@ -113,9 +112,6 @@ Function_Result i2c_read_bytes(I2C_TypeDef *I2C, uint8_t address, uint8_t reg, u
         I2C->CR1 |= CR1_ERRIE_Msk;
 
         I2C->CR2 |= CR2_START_Msk;
-
-
-
         return STARTED;
     }
 
@@ -197,7 +193,7 @@ void I2C1_EV_Handler(void){
        
     }
 
-    if (isr & ISR_RXNE_Msk) {
+    if (isr & ISR_RXNE_Msk){
 
         if(ctx->phase == READ_DATA){
             uint8_t data = ctx->I2C->RXDR;

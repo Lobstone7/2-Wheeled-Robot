@@ -13,50 +13,36 @@ void i2c_test_callback(Trans_State result, void *context)
     __asm volatile ("nop");
 }
 
+static volatile int imu_done = 0;
+static volatile Trans_State imu_result;
+
+static void imu_complete_callback(IMU_Operation operation,Trans_State state,void *context)
+{
+    (void)operation;
+    (void)context;
+
+    imu_result = state;
+    imu_done = 1;
+}
+
 void main(){
 
     board_init();
-    //rtos_init();
-    //vTaskStartScheduler();
-
-    /*IMU_STATE state = {0};
-    state.bias = imu_calibrate(I2C1);
-    PID_Config config = {
-        .Kp = 0.0f,          
-        .Ki = 0.0f,          
-        .Kd = 0.0f,          
-        .integral_limit = 20.0f,
-        .output_limit = 100.0f
-    };
-
-    PID_State p_state = {
-        .integral = 0.0f,
-        .desired_angle = 0.0f
-    };
     
-    
+    imu_set_complete_callback(imu_complete_callback, NULL);
 
-    uint32_t previous_ms = SysTick_get_ms();
+    imu_init();
 
-    while (1){
-        imu_update(I2C1,&state);
+    while (1)
+    {
+    if (imu_done)
+    {
+        imu_done = 0;
 
-        uint32_t current_ms = SysTick_get_ms();
-        float dt = (current_ms - previous_ms)/1000.0f;
-        previous_ms = current_ms;
-
-        int output = PID(&config, &p_state, state.pitch, dt, state.gyro_x);
-
-        motor_set_speed(&left_motor,output);
-        motor_set_speed(&right_motor,output);
-    } */
-    rtos_init();
-    vTaskStartScheduler();
-    while(1){
-
+        // Put a breakpoint here
+        // Inspect imu_result
     }
-
-
+    }
 
 } 
 

@@ -39,6 +39,7 @@ typedef struct{
 }IMU_DataF;
 
 typedef struct{
+    GYRO_Bias bias;
     float pitch;
     uint32_t previous_ms;
     float gyro_x;
@@ -159,6 +160,7 @@ void imu_error_handler(void *context, Trans_State state);
 void imu_init(void);
 void imu_calibrate(void);
 void imu_read(void);
+int imu_pid(void);
 
 
-#endif
+#endif 

@@ -12,14 +12,18 @@ static IMU_Context imu_context;
 static IMU_STATE imu_state;
 static IMU_DataF dataf;
 static PID_Config config = {
-    .Kp = 1,
-    .Ki = 0,
-    .Kd = 0,
+    .Kp = 1.0f,
+    .Ki = 0.0f,
+    .Kd = 0.0f,
     .integral_limit = 0,
     .output_limit = 100,
 };
 
-static PID_State p_state;
+static PID_State p_state = { 
+    .integral = 0.0f, 
+    .desired_angle = 0.0f 
+};
+
 
 static int32_t gyro_sum_x;
 static int32_t gyro_sum_y;
@@ -318,34 +322,34 @@ void imu_read(void){
 }
 
 int imu_pid(void){
-    state->gyro_x = dataf.gyro.x;
+    imu_state.gyro_x = dataf.gyro.x;
 
     float accel_pitch = atan2f(dataf.accel.x,dataf.accel.z);
     
     float dt = 0.010f;
-    float gyro_prediction = state->pitch + dataf.gyro.x * dt;
-    state->pitch = IMU_ALPHA * gyro_prediction + (1 - IMU_ALPHA) * accel_pitch;
+    float gyro_prediction = imu_state.pitch + dataf.gyro.x * dt;
+    imu_state.pitch = IMU_ALPHA * gyro_prediction + (1 - IMU_ALPHA) * accel_pitch;
 
-    float error = state->pitch - p_state->desired_angle;
-    p_state->integral += error * dt;
-    if(p_state->integral >= config->integral_limit){
-        p_state->integral = config->integral_limit;
+    float error = imu_state.pitch - p_state.desired_angle;
+    p_state.integral += error * dt;
+    if(p_state.integral >= config.integral_limit){
+        p_state.integral = config.integral_limit;
     }
-    else if(p_state->integral <= (-config->integral_limit)){
-         p_state->integral = -config->integral_limit;
+    else if(p_state.integral <= (-config.integral_limit)){
+        p_state.integral = -config.integral_limit;
     }
 
-    float proportion = config->Kp * error;
-    float integral = config->Ki * p_state->integral;
-    float derivative = -config->Kd * dataf.gyro.x;
+    float proportion = config.Kp * error;
+    float integral = config.Ki * p_state.integral;
+    float derivative = -config.Kd * dataf.gyro.x;
 
     float result = proportion + integral + derivative;
 
-    if(result >= config->output_limit){
-        result = config->output_limit;
+    if(result >= config.output_limit){
+        result = config.output_limit;
     }
-    else if(result <= (-config->output_limit)){
-        result = -config->output_limit;
+    else if(result <= (-config.output_limit)){
+        result = -config.output_limit;
     }
 
     return (int)result;

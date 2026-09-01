@@ -1,27 +1,5 @@
-#include "FreeRTOS.h"
-#include "task.h"
-#include "gpio.h"
-#include "imu.h"
+#include "rtos.h"
 
-volatile uint32_t task1_count = 0;
-volatile uint32_t task2_count = 0;
-
-static void task1(void *argument){
-    (void)argument;
-
-    while (1)
-    {
-        task1_count++;
-    }
-}
-
-static void task2(void *argument){
-    (void)argument;
-
-    while (1){
-        task2_count++;
-    }
-}
 
 static void imu_complete_callback(IMU_Operation operation,Trans_State state,void *context){
     (void)operation;
@@ -56,10 +34,15 @@ static void imu_task(void *argument){
 
     TickType_t last_wake_time = xTaskGetTickCount();
 
-    for (;;) {
+    for (;;){
         imu_read();
 
         ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+
+        int correction = imu_pid();
+
+        motor_set_speed(&left_motor, correction);
+        motor_set_speed(&right_motor, -correction);
 
         vTaskDelayUntil(&last_wake_time, pdMS_TO_TICKS(10));
 
@@ -67,7 +50,6 @@ static void imu_task(void *argument){
 }
 
 void rtos_init(void){
-    xTaskCreate(imu_task,"IMU",256,NULL,2,NULL);
-    xTaskCreate(task2,"Task2",256,NULL,2,NULL);
+    xTaskCreate(imu_task,"IMU",256,NULL,1,NULL);
 }
 
