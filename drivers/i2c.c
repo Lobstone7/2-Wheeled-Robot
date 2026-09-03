@@ -21,18 +21,15 @@ static I2C_Context i2c1_context;
 
 
 void i2c1_init(void){
-    volatile uint32_t delay = 10;
-    while (delay--) {
-        __asm volatile ("nop");
-    }
-
     I2C1->CR1 &= ~CR1_PE_Msk;
+    while(I2C1->CR1 & CR1_PE_Msk);
 
     I2C1->TIMINGR = 0x10909CEC;
 
     I2C1->CR1 |= CR1_PE_Msk;
 
     NVIC->ISER[0] = (1U << 31);
+    NVIC->ISER[1] = (1U << 0);
 
 }
 
@@ -62,10 +59,7 @@ Function_Result i2c_write(I2C_TypeDef* I2C,uint8_t address,uint8_t reg,uint8_t d
 
         I2C->CR2 |= CR2_AUTOEND_Msk;
 
-        I2C->CR1 |= CR1_TXIE_Msk;
-        I2C->CR1 |= CR1_STOPIE_Msk;
-        I2C->CR1 |= CR1_NACKIE_Msk;
-        I2C->CR1 |= CR1_ERRIE_Msk;
+        I2C->CR1 |= (CR1_TXIE_Msk | CR1_STOPIE_Msk | CR1_NACKIE_Msk | CR1_ERRIE_Msk);
 
         I2C->CR2 |= CR2_START_Msk;
     }
@@ -104,13 +98,8 @@ Function_Result i2c_read_bytes(I2C_TypeDef *I2C, uint8_t address, uint8_t reg, u
 
         I2C->CR2 &= ~CR2_AUTOEND_Msk;
 
-        I2C->CR1 |= CR1_TXIE_Msk;
-        I2C->CR1 |= CR1_RXIE_Msk;
-        I2C->CR1 |= CR1_TCIE_Msk;
-        I2C->CR1 |= CR1_STOPIE_Msk;
-        I2C->CR1 |= CR1_NACKIE_Msk;
-        I2C->CR1 |= CR1_ERRIE_Msk;
-
+        I2C->CR1 |= (CR1_TXIE_Msk  | CR1_RXIE_Msk  | CR1_TCIE_Msk  | CR1_STOPIE_Msk| CR1_NACKIE_Msk |CR1_ERRIE_Msk);
+        
         I2C->CR2 |= CR2_START_Msk;
         return STARTED;
     }
@@ -229,6 +218,26 @@ void I2C1_EV_Handler(void){
     }
 
     
+}
+
+void I2C1_ER_Handler(void)
+{
+    uint32_t isr = I2C1->ISR;
+
+    if (isr & ISR_ARLO_Msk) {
+        I2C1->ICR = ICR_ARLOCF_Msk;
+
+        // breakpoint here
+        __asm volatile ("nop");
+    }
+
+    if (isr & ISR_BERR_Msk) {
+        I2C1->ICR = ICR_BERRCF_Msk;
+    }
+
+    if (isr & ISR_OVR_Msk) {
+        I2C1->ICR = ICR_OVRCF_Msk;
+    }
 }
 
 Trans_State i2c_get_state(void){

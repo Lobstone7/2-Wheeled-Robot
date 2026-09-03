@@ -4,6 +4,7 @@
 #include "common.h"
 #include "SysTick.h"
 #include "i2c.h"
+#include "usart.h"
 #define IMU_ADDR 0x68
 
 #define IMU_RX_BUFFER_SIZE 14

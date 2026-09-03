@@ -12,11 +12,11 @@ static IMU_Context imu_context;
 static IMU_STATE imu_state;
 static IMU_DataF dataf;
 static PID_Config config = {
-    .Kp = 1.0f,
-    .Ki = 0.0f,
-    .Kd = 0.0f,
-    .integral_limit = 0,
-    .output_limit = 100,
+    .Kp = 100.0f,
+    .Ki = 5.0f,
+    .Kd = 2.0f,
+    .integral_limit = 10.0f,
+    .output_limit = 100.0f,
 };
 
 static PID_State p_state = { 
@@ -352,6 +352,20 @@ int imu_pid(void){
         result = -config.output_limit;
     }
 
+    //usart2_write((uint8_t *)"pitch=", 6);
+    //usart2_write_float(imu_state.pitch);
+    
+    //usart2_write((uint8_t *)" error=", 7);
+    //usart2_write_float(imu_state.pitch - p_state.desired_angle);
+    
+    //usart2_write((uint8_t *)" gyro=", 6);
+    //usart2_write_float(dataf.gyro.x);
+    
+    //usart2_write((uint8_t *)" corr=", 6);
+    //usart2_write_int((int)result);
+    
+    //usart2_write((uint8_t *)"\r\n", 2);
+    
     return (int)result;
 
 }

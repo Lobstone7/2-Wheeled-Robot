@@ -29,20 +29,10 @@ void main(){
 
     board_init();
     
-    imu_set_complete_callback(imu_complete_callback, NULL);
-
-    imu_init();
-
-    while (1)
-    {
-    if (imu_done)
-    {
-        imu_done = 0;
-
-        // Put a breakpoint here
-        // Inspect imu_result
-    }
-    }
+    rtos_init();
+    vTaskStartScheduler();
+    
+   
 
 } 
 

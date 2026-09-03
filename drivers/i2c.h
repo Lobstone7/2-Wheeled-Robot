@@ -143,5 +143,7 @@ Function_Result i2c_write(I2C_TypeDef* I2C,uint8_t address,uint8_t reg,uint8_t d
 Function_Result i2c_read_bytes(I2C_TypeDef *I2C, uint8_t address, uint8_t reg, uint8_t *buffer, uint8_t length,void (*callback)(Trans_State result, void *context), void *context);
 Trans_State i2c_get_state(void);
 uint8_t i2c_get_data(void);
+void I2C1_EV_Handler(void);
+void I2C1_ER_Handler(void);
 
 #endif
